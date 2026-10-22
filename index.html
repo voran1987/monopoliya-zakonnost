@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>:root{color-scheme:light}[hidden]{display:none!important}</style>
+<title>Монополия: законность и правопорядок</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=PT+Sans+Narrow:wght@400;700&family=Russo+One&display=swap">
+<style>
+/* Раскладка: квадратное поле 11×11 слева, справа панель карточки и счёта; на телефоне панель под полем */
+:root{
+  --bg:#e9efe6; --ink:#17261d; --muted:#5a6b60; --board:#cfe3cf; --cell:#f4f8ef; --line:#17261d;
+  --panel:#fbfdf8; --accent:#c8321f; --accent-ink:#fff; --ok:#1d7a45; --bad:#b3261e;
+  --g-brown:#8c5a3c; --g-lblue:#8fd0ee; --g-pink:#d6439a; --g-orange:#ee8a1e; --g-red:#d62b2b;
+  --g-yellow:#f2cf1d; --g-green:#1f9d55; --g-dblue:#1f45a8; --g-rail:#2b2f2c; --g-util:#9aa79f;
+  --t1:#d62b2b; --t2:#1f45a8; --t3:#1f9d55; --t4:#e29b00;
+  --f-disp:"Russo One","PT Sans",Arial,sans-serif; --f-body:"PT Sans",Arial,sans-serif; --f-nar:"PT Sans Narrow","PT Sans",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101a14; --ink:#e6efe6; --muted:#9db2a4; --board:#1b2e22; --cell:#233a2b; --line:#7d9786;
+  --panel:#18281e; --accent:#ff6b4f; --accent-ink:#1a0a05; --ok:#52c982; --bad:#ff8a80;
+  --g-brown:#b07a58; --g-lblue:#6fb9de; --g-pink:#e262b0; --g-orange:#f29a3a; --g-red:#ea4a4a;
+  --g-yellow:#f2cf1d; --g-green:#2fb96b; --g-dblue:#5b7be0; --g-rail:#c9d3cc; --g-util:#7d9786;
+  --t1:#ff6b5f; --t2:#6f93ff; --t3:#43c47d; --t4:#ffc233; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101a14; --ink:#e6efe6; --muted:#9db2a4; --board:#1b2e22; --cell:#233a2b; --line:#7d9786;
+  --panel:#18281e; --accent:#ff6b4f; --accent-ink:#1a0a05; --ok:#52c982; --bad:#ff8a80;
+  --g-brown:#b07a58; --g-lblue:#6fb9de; --g-pink:#e262b0; --g-orange:#f29a3a; --g-red:#ea4a4a;
+  --g-yellow:#f2cf1d; --g-green:#2fb96b; --g-dblue:#5b7be0; --g-rail:#c9d3cc; --g-util:#7d9786;
+  --t1:#ff6b5f; --t2:#6f93ff; --t3:#43c47d; --t4:#ffc233; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body);margin:0;
+  padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+@media(min-width:1000px){.wrap{grid-template-columns:minmax(0,1fr) 360px;align-items:start}}
+h1,h2,h3{font-family:var(--f-disp);font-weight:400;margin:0;text-wrap:balance}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* поле */
+.board{container-type:inline-size;width:100%;max-width:880px;aspect-ratio:1;margin:0 auto;display:grid;
+  grid-template-columns:1.5fr repeat(9,1fr) 1.5fr;grid-template-rows:1.5fr repeat(9,1fr) 1.5fr;
+  background:var(--board);border:3px solid var(--line);position:relative}
+.cell{border:1px solid var(--line);background:var(--cell);display:flex;position:relative;min-width:0;min-height:0;
+  padding:0;color:var(--ink);text-align:center;font-family:var(--f-nar);overflow:hidden}
+.cell:hover{filter:brightness(1.06)}
+.s-b{flex-direction:column}.s-t{flex-direction:column-reverse}.s-l{flex-direction:row-reverse}.s-r{flex-direction:row}
+.band{background:var(--g,transparent);flex:none;position:relative}
+.s-b .band,.s-t .band{height:22%}.s-l .band,.s-r .band{width:22%}
+.body{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:2% 3%;gap:2px}
+.nm{font-size:1.08cqw;font-weight:700;line-height:1.1;overflow-wrap:anywhere;max-width:100%;padding-top:1.3cqw}
+.sl{font-size:1.05cqw;padding-bottom:2.6cqw;color:var(--muted);line-height:1}
+.idx{position:absolute;top:1px;left:3px;font-size:.95cqw;line-height:1;font-weight:700;color:var(--ink);opacity:.7}
+.cell.rail{background:linear-gradient(var(--cell),var(--cell))}
+.cell.ch .nm,.cell.cc .nm{color:var(--accent);font-size:1.5cqw}
+.cell.tx{background:repeating-linear-gradient(135deg,var(--cell) 0 6px,var(--board) 6px 12px)}
+.corner .nm{font-family:var(--f-disp);font-weight:400;font-size:1.65cqw;color:var(--accent)}
+.corner .body{justify-content:center;gap:4px;padding:6%}
+.owner{position:absolute;right:3px;bottom:3px;width:1.9cqw;height:1.9cqw;min-width:9px;min-height:9px;border-radius:50%;border:2px solid var(--ink)}
+.tks{position:absolute;left:0;right:0;bottom:2%;display:flex;gap:2px;flex-wrap:wrap;justify-content:center;pointer-events:none}
+.tk{width:2.6cqw;height:2.6cqw;min-width:12px;min-height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--ink);transition:transform .15s}
+.cell.sel{outline:3px solid var(--accent);outline-offset:-3px;z-index:2}
+/* центр */
+.center{grid-column:2/11;grid-row:2/11;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3cqw;padding:3cqw;text-align:center}
+.banner{background:var(--accent);color:var(--accent-ink);font-family:var(--f-disp);padding:1.6cqw 4cqw;transform:rotate(-5deg);
+  font-size:4.3cqw;line-height:1.1;text-align:center;letter-spacing:.03em;border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink)}
+.lead{font-size:1.9cqw;color:var(--muted);max-width:46cqw;margin:0}
+.dice{display:flex;gap:2cqw}
+.die{width:8cqw;height:8cqw;border:3px solid var(--ink);border-radius:1.4cqw;background:var(--panel);font-family:var(--f-disp);font-size:4.6cqw;
+  display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.die.roll{animation:wob .12s infinite}
+@keyframes wob{50%{transform:rotate(9deg) scale(.95)}}
+.turn{display:flex;align-items:center;gap:1.2cqw;font-family:var(--f-disp);font-size:2.4cqw}
+.dot{display:inline-block;width:1.15em;height:1.15em;border-radius:50%;border:2px solid var(--ink);flex:none}
+.btns{display:flex;gap:1.2cqw;flex-wrap:wrap;justify-content:center}
+.btn{background:var(--ink);color:var(--bg);border:0;border-radius:6px;padding:1.2cqw 2.6cqw;font-weight:700;font-size:max(14px,1.9cqw)}
+.btn.alt{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+.btn.hot{background:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+@container (max-width:600px){
+  .nm,.sl{display:none}.idx{font-size:9px;position:static;margin:auto}.body{justify-content:center}
+  .cell.ch .nm,.cell.cc .nm{display:block;font-size:0;padding:0}.cell.ch .nm::before{content:'?';font-size:16px}.cell.cc .nm::before{content:'★';font-size:14px}.corner .nm{display:block;font-size:6.5px;padding:0;overflow-wrap:anywhere}
+  .lead{display:none}.banner{font-size:4.8cqw}}
+/* панель */
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel{background:var(--panel);border:2px solid var(--line);padding:16px}
+.card .hd{margin:-16px -16px 12px;padding:12px 16px;background:var(--g,var(--ink));color:var(--hc,#fff);border-bottom:2px solid var(--line)}
+.card .hd small{display:block;font-family:var(--f-nar);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.card h2{font-size:1.25rem;line-height:1.15;margin-top:2px}
+.card p{margin:.4em 0}.card .src{color:var(--muted);font-size:.85rem;margin-top:10px}
+.card table{border-collapse:collapse;width:100%;margin:.5em 0;font-size:.92rem;font-variant-numeric:tabular-nums}
+.card td,.card th{border:1px solid var(--line);padding:3px 6px;text-align:left}
+.card .act{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.card .ans{background:var(--board);border-left:4px solid var(--accent);padding:8px 10px;margin-top:10px}
+.score{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.score li{display:flex;align-items:center;gap:10px;padding:6px 8px;border:2px solid transparent}
+.score li.on{border-color:var(--accent);background:var(--board)}
+.score b{margin-left:auto;font-family:var(--f-disp);font-weight:400;font-size:1.3rem;font-variant-numeric:tabular-nums}
+.score input{font:inherit;color:inherit;background:transparent;border:0;border-bottom:1px dashed var(--muted);width:9em;min-width:0}
+.panel h3{font-size:1rem;margin-bottom:8px;letter-spacing:.03em}
+.log{margin:0;padding:0;list-style:none;font-size:.9rem;max-height:170px;overflow:auto;color:var(--muted)}
+.log li{padding:2px 0;border-bottom:1px dotted var(--muted)}.log li:first-child{color:var(--ink)}
+.cfg{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.9rem}
+.cfg select{font:inherit;color:inherit;background:var(--cell);border:2px solid var(--line);padding:3px 6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:.82rem;font-family:var(--f-nar)}
+.legend i{display:inline-block;width:.9em;height:.9em;margin-right:4px;border:1px solid var(--line);vertical-align:-1px}
+.side .btn{padding:7px 14px;font-size:.95rem}
+.opts{display:grid;gap:8px;margin:12px 0 0}
+.opt{text-align:left;background:var(--cell);color:var(--ink);border:2px solid var(--line);padding:9px 11px;font:inherit;line-height:1.3}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 20%,var(--cell));font-weight:700}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 18%,var(--cell))}
+.opt.dim{opacity:.55}
+.price{display:inline-block;background:var(--ink);color:var(--bg);padding:1px 8px;font-family:var(--f-disp);font-size:.85rem;margin-right:6px}
+.verdict{margin-top:12px;padding:8px 10px;border-left:4px solid var(--ok);background:var(--board);font-weight:700}
+.verdict.bad{border-left-color:var(--bad)}
+.rank{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.rank td,.rank th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left}
+.small{font-size:.85rem;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.die.roll{animation:none}.tk{transition:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div id="board" class="board" aria-label="Игровое поле"></div>
+  <aside class="side">
+    <section class="panel card" id="card" aria-live="polite"></section>
+    <section class="panel"><h3>БАЛЛЫ</h3><ul class="score" id="score"></ul>
+      <div class="cfg" style="margin-top:10px"><label for="nteams">Команд:</label>
+        <select id="nteams"><option>2</option><option selected>3</option><option>4</option></select>
+        <button class="btn alt" id="finish" style="padding:4px 10px;font-size:.85rem">Подвести итоги</button>
+        <button class="btn alt" id="reset" style="padding:4px 10px;font-size:.85rem">Начать заново</button></div></section>
+    <section class="panel"><h3>ЖУРНАЛ ХОДОВ</h3><ul class="log" id="log"></ul></section>
+    <section class="panel"><h3>БЛОКИ ТЕМЫ</h3><div class="legend" id="legend"></div></section>
+  </aside>
+</main>
+<script>
+const G={brown:['Законность: основы','--g-brown'],lblue:['Принципы законности','--g-lblue'],pink:['Правопорядок','--g-pink'],
+orange:['Конституция и гарантии','--g-orange'],red:['Правосознание','--g-red'],yellow:['Функции и деформации','--g-yellow'],
+green:['Правовая культура','--g-green'],dblue:['Повышение культуры','--g-dblue'],rail:['Надзор и контроль','--g-rail'],util:['Сознание и его структура','--g-util']};
+const DARKTXT=['lblue','yellow','util'];
+const PR={brown:2,lblue:2,pink:3,orange:3,red:4,yellow:4,green:5,dblue:6,rail:3,util:2};
+// тип, группа, название, подпись, справка, источник, вопрос, варианты (первый — верный)
+const C=[
+['c','','СТАРТ','Тема 1.4','<p>Законность и правопорядок, правосознание, правовая культура. Каждый проход через старт даёт <b>+2 балла</b>.</p>'],
+['p','brown','Законность','принцип права','<p>Межотраслевой принцип права: обращённое ко всем субъектам правоотношений универсальное требование строить своё поведение в условиях строгого и неукоснительного соблюдения правовых норм.</p><p>Четыре подхода: принцип или требование; метод государственного управления; режим жизни общества; идея права.</p>','',
+ 'Как определяется законность?',['Межотраслевой принцип права: универсальное требование ко всем субъектам строго соблюдать правовые нормы','Состояние упорядоченности общественных отношений, итог правового регулирования','Совокупность правовых взглядов и идей всего общества','Деятельность суда по разрешению споров']],
+['cc','','Кейс','','',''],
+['p','brown','Верховенство закона','ключевой принцип','<p>Первый и ключевой принцип законности. Четыре требования: закон выше подзаконных актов; закон имеет преимущество перед иными источниками права; нет сил и лиц, избавленных от подчинения закону, государство связано своими законами; все государственные структуры действуют строго на основе закона.</p>','',
+ 'Что предполагает верховенство закона?',['Закон имеет большую юридическую силу, чем подзаконные акты, а государство связано созданными им законами','Акты министерств имеют приоритет над законами в своей отрасли','Должностные лица вправе не исполнять закон, если это целесообразно','Закон действует только там, где принят региональной властью']],
+['tx','','Правовой инфантилизм','штраф −2','<p>Недооценка роли права из-за недостатка жизненного опыта и незнания законодательства — одна из деформаций правосознания.</p><p><b>Штраф: −2 балла.</b></p>'],
+['r','rail','Прокурорский надзор','единая система','<p>Единая система органов прокуратуры надзирает за соблюдением Конституции и исполнением законов (ФЗ «О прокуратуре РФ»). Прокурор может опротестовать акт, противоречащий закону, и добиваться ответственности нарушителей.</p>','',
+ 'Что вправе сделать прокурор, выявив акт, противоречащий закону?',['Опротестовать акт и добиваться ответственности нарушителей','Принять решение по существу спора вместо суда','Только сообщить о нарушении в СМИ','Утвердить акт в новой редакции']],
+['p','lblue','Равенство','ст. 19 Конституции','<p>Принцип равенства: все граждане равны перед законом. Статья 19 (ч. 1) Конституции РФ: все равны перед законом и судом.</p>','',
+ 'Какая статья Конституции РФ закрепляет, что все равны перед законом и судом?',['Статья 19','Статья 15','Статья 120','Статья 4']],
+['ch','','Вопрос','','',''],
+['p','lblue','Единство','и другие принципы','<p>Принципы законности: <b>единство</b> (требования едины для всех на всей территории), <b>целесообразность</b> (нельзя противопоставлять законность целесообразности), <b>реальность</b> (фактическое исполнение предписаний и неотвратимость ответственности), <b>культурность</b> (связь с общей и правовой культурой), <b>равенство</b>.</p>','',
+ 'Что означает принцип единства законности?',['Требования закона едины для всех субъектов на всей территории государства','Каждый регион вправе толковать закон по-своему','Закон обязателен только для государственных органов','Для всех отраслей права действует один закон']],
+['p','lblue','Целесообразность','не против закона','<p>Принцип целесообразности: недопустимо противопоставлять законность целесообразности. Подмена законности политической целесообразностью — форма проявления правового нигилизма.</p>','',
+ 'Как соотносятся законность и целесообразность?',['Недопустимо противопоставлять законность целесообразности','Целесообразность допускает отступление от закона при политической необходимости','Законность вторична по отношению к целесообразности','Эти понятия не связаны между собой']],
+['c','','СУД','разбирательство','<p>Сюда попадают нарушители с клетки 30. Реальность законности означает фактическое исполнение предписаний и неотвратимость ответственности.</p>'],
+['p','pink','Правопорядок','состояние упорядоченности','<p>Такое состояние жизни общества, которое складывается как результат правового регулирования и реализации принципа законности и выражается в фактической юридической упорядоченности поведения субъектов. Особенности: упорядоченность, нормативность, реализация норм, гарантии государства.</p>','',
+ 'Что такое правопорядок?',['Состояние жизни общества как результат правового регулирования и реализации законности','Принцип, требующий от всех субъектов соблюдать нормы права','Орган, охраняющий общественный порядок','Совокупность всех нормативных актов государства']],
+['u','util','Сознание','формы общественного','<p>Сознание — форма отражения объективной действительности в психике человека. Формы общественного сознания: правосознание, политическое, нравственное, религиозное, эстетическое, научное.</p>','',
+ 'Что из перечисленного относится к формам общественного сознания?',['Правосознание','Правоприменение','Законодательная техника','Прокурорский надзор']],
+['p','pink','Принципы правопорядка','шесть принципов','<p>Определённость, системность, организованность, государственная гарантированность, устойчивость, единство. Организованность: правопорядок возникает не стихийно, а благодаря организующей деятельности государства.</p>','',
+ 'Что означает принцип организованности правопорядка?',['Он возникает не стихийно, а благодаря организующей деятельности государства','Он складывается стихийно сам собой','Он представляет собой набор разрозненных актов','Его охраняют только общественные организации']],
+['p','pink','Структура правопорядка','три элемента','<p>1) Структура общества, закреплённая юридическими нормами; 2) правовые отношения и связи, самый динамичный элемент; 3) атрибутивные элементы: компетенции, полномочия, юрисдикция участников.</p>','',
+ 'Какой элемент структуры правопорядка наиболее динамичен?',['Правовые отношения и связи','Структура общества','Атрибутивные элементы','Государственные гарантии']],
+['r','rail','Судебный контроль','проверка решений','<p>Суды проверяют законность и обоснованность приговоров и решений, разрешают споры в сфере управления. Жалобы на решения и действия должностных лиц при проверке сообщения о преступлении рассматриваются по ст. 125 УПК РФ.</p>','',
+ 'По какой статье УПК РФ рассматриваются жалобы на действия должностных лиц при проверке сообщения о преступлении?',['Ст. 125 УПК РФ','Ст. 120 Конституции РФ','Ст. 19 Конституции РФ','Ст. 15 УПК РФ']],
+['p','orange','Конституционные основы','ст. 1, 2, 4, 15','<p>Ст. 1: Россия — демократическое федеративное правовое государство. Ст. 2 и 18: человек, его права и свободы — высшая ценность. Ст. 4 (ч. 2): верховенство Конституции и федеральных законов. Ст. 15: высшая юридическая сила Конституции.</p>','',
+ 'Как ст. 1 Конституции РФ характеризует Россию?',['Демократическое федеративное правовое государство','Унитарное правовое государство','Демократическая республика без федеративного устройства','Социальное государство с монархической формой правления']],
+['cc','','Кейс','','',''],
+['p','orange','Общие гарантии','социальные','<p>Экономические: устойчивая экономика, разные формы собственности. Политические: демократический режим, разделение властей, гражданское общество. Идеологические: правосознание, правовая культура, правовое воспитание.</p>','',
+ 'Что относится к общим (социальным) гарантиям законности?',['Устойчивая экономика, разделение властей, правовая культура','Прокурорский надзор и судебный контроль','Закрепление принципов законности в законодательстве','Юридическая ответственность за правонарушения']],
+['p','orange','Специальные гарантии','юридические','<p>Закрепление принципов законности в законодательстве, независимый суд и судебный контроль, прокурорский надзор, юридическая ответственность за правонарушения.</p>','',
+ 'Какая гарантия законности является специальной (юридической)?',['Прокурорский надзор','Устойчивая экономика','Разделение властей','Правовое воспитание']],
+['c','','ПРОСВЕЩЕНИЕ','бонус +1','<p>Правовое образование в школах и вузах, правовая пропаганда в СМИ, бесплатная юридическая помощь повышают правовую культуру.</p><p>Бонус за просвещение: <b>+1 балл</b>.</p>'],
+['p','red','Правосознание','понятие','<p>Отражение в сознании субъекта уровня развития представлений о праве, отношения к нему и правовой мотивации поведения. Включает представления о праве, отношение к праву и правовую мотивацию.</p>','',
+ 'Что такое правосознание?',['Отражение в сознании субъекта представлений о праве, отношения к нему и правовой мотивации поведения','Система норм, установленных государством','Фактическая упорядоченность поведения субъектов','Уровень развития законодательной техники']],
+['ch','','Вопрос','','',''],
+['p','red','Виды: по субъекту','четыре вида','<p>Индивидуальное (отдельной личности), групповое (социальной или профессиональной группы), массовое (больших общностей людей), общественное (всего общества).</p>','',
+ 'Какой вид правосознания — совокупность правовых взглядов и идей всего общества?',['Общественное','Групповое','Массовое','Индивидуальное']],
+['p','red','Виды: по уровню','три уровня','<p>Обыденное — из повседневного опыта без юридической подготовки. Профессиональное — у юристов. Доктринальное — научное, системные правовые теории и концепции.</p>','',
+ 'Какое правосознание складывается из повседневного опыта без специальной юридической подготовки?',['Обыденное','Профессиональное','Доктринальное','Групповое']],
+['r','rail','Административный контроль','инспекции','<p>Органы управления и специальные инспекции контролируют соблюдение установленных правил в отдельных отраслях.</p>','',
+ 'Кто осуществляет административный контроль за соблюдением законов?',['Органы управления и специальные инспекции в отдельных отраслях','Только суды общей юрисдикции','Единая система органов прокуратуры','Общественные объединения граждан']],
+['p','yellow','Функции правосознания','пять функций','<p>Познавательная, оценочная, регулятивная, идейно-воспитательная, правовое моделирование (прогностическая функция: предвидение развития права).</p>','',
+ 'Какая функция правосознания состоит в предвидении развития права?',['Правовое моделирование','Познавательная','Оценочная','Регулятивная']],
+['p','yellow','Деформации','искажения','<p>Деформация — искажение позитивных правовых взглядов и установок. Виды: правовой инфантилизм, правовой идеализм, правовой дилетантизм, правовой нигилизм.</p>','',
+ 'Как называется переоценка возможностей права и преувеличение его роли в жизни общества?',['Правовой идеализм','Правовой инфантилизм','Правовой дилетантизм','Правовой нигилизм']],
+['u','util','Структура правосознания','три компонента','<p>Интеллектуальный (знания и представления), эмоциональный (чувства и оценки), волевой (установки и мотивы, определяющие выбор правомерного поведения). Знания формируют отношение, отношение определяет решение действовать.</p>','',
+ 'Какой компонент правосознания включает установки и мотивы, определяющие выбор правомерного поведения?',['Волевой','Интеллектуальный','Эмоциональный','Нормативный']],
+['p','yellow','Правовой нигилизм','отрицание права','<p>Идеология, отрицающая необходимость и позитивную роль права. Формы: умышленные нарушения закона, массовое неисполнение предписаний, акты, противоречащие закону, подмена законности политической целесообразностью, нарушение конституционных прав, догматизация и примат политики над правом.</p>','',
+ 'Что относится к формам проявления правового нигилизма?',['Массовое несоблюдение и неисполнение правовых предписаний','Правовое просвещение молодёжи','Бесплатная юридическая помощь','Укрепление независимости судей']],
+['c','','ПРАВОНАРУШЕНИЕ!','в суд','<p>Нарушение закона отправляет в клетку 10. За правонарушения наступает юридическая ответственность, а решения можно обжаловать в суд.</p>'],
+['p','green','Правовая культура','понятие','<p>Элемент духовной культуры, отражающий уровень развития права и его роль в жизни; система ценностей, достигнутых человечеством в области права.</p>','',
+ 'Что такое правовая культура?',['Элемент духовной культуры, отражающий уровень развития права и его роль в жизни','Фактическая юридическая упорядоченность поведения','Универсальное требование соблюдать правовые нормы','Система органов, охраняющих порядок']],
+['p','green','Элементы культуры','три элемента','<p>Законодательство (уровень законодательной техники), правоприменение (уровень практики), правосознание и правовая активность населения.</p>','',
+ 'Какие элементы включает правовая культура?',['Законодательство, правоприменение, правосознание и правовую активность населения','Только уровень развития законодательства','Только правосознание граждан','Законодательство и судебную систему, без учёта граждан']],
+['cc','','Кейс','','',''],
+['p','green','Культура и правосознание','виды и структура','<p>Виды: личности, социальной группы, общества. Структура культуры личности: правовая идеология, правовая психология, юридически значимое поведение. Функции: познавательная, регулятивная, нормативно-аксиологическая. Правовая культура шире правосознания.</p>','',
+ 'Чем правовая культура шире правосознания?',['Включает также юридически значимое поведение','Ограничивается правовыми знаниями','Охватывает только деятельность юристов','Не включает правовую психологию']],
+['r','rail','Независимость судей','ст. 120','<p>Ст. 120 (ч. 1) Конституции РФ: судьи независимы и подчиняются только Конституции РФ и федеральному закону. Независимый суд — специальная гарантия законности.</p>','',
+ 'Кому подчиняются судьи согласно ч. 1 ст. 120 Конституции РФ?',['Только Конституции и федеральному закону','Председателю суда и закону','Президенту и закону','Прокурору и Конституции']],
+['ch','','Вопрос','','',''],
+['p','dblue','Меры повышения','правовой культуры','<p>Превентивные меры (совершенствование законодательства, профилактика правонарушений, подготовка юристов) и правовое воспитание и просвещение. Методы: убеждение, поощрение, предупреждение, принуждение.</p>','',
+ 'Что входит в правовое воспитание и просвещение?',['Правовое образование в школах и вузах, правовая пропаганда в СМИ, бесплатная юридическая помощь','Усиление уголовных санкций','Сокращение числа правовых норм','Запрет на критику закона']],
+['tx','','Примат политики над правом','штраф −2','<p>Подмена законности политической целесообразностью и примат политики над правом — формы правового нигилизма.</p><p><b>Штраф: −2 балла.</b></p>'],
+['p','dblue','Госполитика 2011','Пр-1168','<p>Основы государственной политики РФ в сфере развития правовой грамотности и правосознания граждан (утв. Президентом РФ 28.04.2011, № Пр-1168). Цели: укрепление уважения к закону, преодоление правового нигилизма, повышение правовой культуры граждан.</p>','',
+ 'Что утверждено Президентом РФ 28.04.2011 (№ Пр-1168)?',['Основы государственной политики в сфере развития правовой грамотности и правосознания граждан','Закон о прокуратуре РФ','Концепция судебной реформы','Основы законодательства о гражданстве']]
+];
+const CHANCE=[
+['Какой принцип законности предполагает фактическое исполнение предписаний и неотвратимость ответственности?',['Реальность','Единство','Равенство','Культурность'],'Это принцип реальности.'],
+['Сколько подходов к пониманию законности выделяют?',['Четыре','Два','Три','Пять'],'Принцип или требование, метод госуправления, режим жизни общества, идея права.'],
+['Какая статья Конституции РФ устанавливает высшую юридическую силу Конституции?',['Статья 15','Статья 1','Статья 19','Статья 120'],'Ст. 15 (ч. 1): Конституция имеет высшую юридическую силу.'],
+['Какая функция правосознания даёт ориентиры и стереотипы поведения в правовых ситуациях?',['Регулятивная','Познавательная','Оценочная','Идейно-воспитательная'],'Регулятивная функция.'],
+['Как называется осознанное игнорирование права и уклонение от исполнения правовых требований?',['Правовой нигилизм','Правовой инфантилизм','Правовой идеализм','Правовой дилетантизм'],'Это правовой нигилизм.'],
+['Что включает структура правовой культуры личности?',['Правовую идеологию, правовую психологию и юридически значимое поведение','Интеллектуальный, эмоциональный и волевой компоненты','Законодательство и правоприменение','Только знание кодексов'],'Интеллектуальный, эмоциональный и волевой компоненты — это структура правосознания.'],
+['Какие функции правовой культуры выделяют?',['Познавательная, регулятивная, нормативно-аксиологическая','Познавательная, оценочная, прогностическая','Регулятивная, карательная, воспитательная','Оценочная, организационная, контрольная'],'Три функции: познавательная, регулятивная, нормативно-аксиологическая.'],
+['Что является результатом правового регулирования и реализации законности?',['Правопорядок','Правосознание','Правовой нигилизм','Правоприменение'],'Правопорядок — результат; законность — его средство и основа.']
+];
+const CHEST=[
+['В школе проведён урок правовой грамотности: правовая культура растёт.',1],
+['Прокурор опротестовал акт, противоречащий закону: законность восстановлена.',2],
+['Суд признал решение должностного лица незаконным по жалобе гражданина.',2],
+['Принят акт, противоречащий закону: возникла правовая коллизия.',-2],
+['Гражданин получил бесплатную юридическую помощь.',1],
+['Массовое неисполнение предписаний: нужны меры по восстановлению порядка.',-1],
+['Обсудите в команде: можно ли оправдать нарушение закона целесообразностью? Баллы не меняются.',0]
+];
+const pl=n=>{n=Math.abs(n);const a=n%10,b=n%100;return b>10&&b<15?'баллов':a===1?'балл':a>1&&a<5?'балла':'баллов'};
+const $=s=>document.querySelector(s);
+const COL=['--t1','--t2','--t3','--t4'], NAMES=['Команда 1','Команда 2','Команда 3','Команда 4'];
+function xy(i){ if(i<=10)return[11,11-i]; if(i<=19)return[11-(i-10),1]; if(i<=30)return[1,1+(i-20)]; return[1+(i-30),11]; }
+function side(i){ if(i<10&&i>0)return'b'; if(i>10&&i<20)return'l'; if(i>20&&i<30)return't'; if(i>30)return'r'; return'k'; }
+const cls={c:'corner',p:'prop',r:'rail',u:'util',ch:'ch',cc:'cc',tx:'tx'};
+const buyable=i=>['p','r','u'].includes(C[i][0]);
+const price=i=>buyable(i)?PR[C[i][1]]:0;
+const rent=i=>Math.ceil(price(i)/2);
+let S, names=[...NAMES], selected=0, busy=false;
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function fresh(n){
+  S={teams:Array.from({length:n},()=>({pos:0,score:12})),cur:0,rolled:false,pending:false,owner:Array(40).fill(-1),
+     dch:shuffle(CHANCE.map((_,k)=>k)),dcc:shuffle(CHEST.map((_,k)=>k)),log:[]};
+}
+function build(){
+  const b=$('#board');b.innerHTML='';
+  C.forEach((c,i)=>{
+    const [r,cc]=xy(i), el=document.createElement('button');
+    el.className='cell '+cls[c[0]]+' s-'+side(i);
+    el.style.gridRow=r;el.style.gridColumn=cc;el.id='c'+i;
+    el.setAttribute('aria-label',i+'. '+c[2]);
+    const g=c[1]?`style="--g:var(${G[c[1]][1]})"`:'';
+    const nm=c[0]==='ch'?'ВОПРОС ?':c[0]==='cc'?'КЕЙС':c[2];
+    const sl=buyable(i)?`цена ${price(i)}`:(c[3]&&c[0]!=='ch'&&c[0]!=='cc'?c[3]:'');
+    el.innerHTML=`<span class="idx">${i}</span><span class="band" ${g}></span><span class="body"><span class="nm">${nm}</span>${sl?`<span class="sl">${sl}</span>`:'<span></span>'}</span><span class="tks"></span>`;
+    el.onclick=()=>{selected=i;card(i);mark()};
+    b.appendChild(el);
+  });
+  const ce=document.createElement('div');ce.className='center';
+  ce.innerHTML=`<div class="banner">ЗАКОННОСТЬ<br>И ПРАВОПОРЯДОК</div>
+  <p class="lead">Правосознание и правовая культура. Чтобы освоить тему, ответьте на вопрос верно и заплатите баллами.</p>
+  <div class="dice"><div class="die" id="d1">·</div><div class="die" id="d2">·</div></div>
+  <div class="turn" id="turn"></div>
+  <div class="btns"><button class="btn hot" id="roll">Бросить кубики</button><button class="btn alt" id="end">Передать ход</button></div>`;
+  b.appendChild(ce);
+  $('#roll').onclick=roll;$('#end').onclick=endTurn;
+  $('#legend').innerHTML=Object.entries(G).map(([k,v])=>`<span><i style="background:var(${v[1]})"></i>${v[0]}</span>`).join('');
+}
+function team(k){return `<span class="dot" style="background:var(${COL[k]})"></span>`}
+function mark(){
+  document.querySelectorAll('.cell').forEach((el,i)=>{
+    el.classList.toggle('sel',i===selected);
+    el.querySelector('.tks').innerHTML=S.teams.map((t,k)=>t.pos===i?`<span class="tk" style="background:var(${COL[k]})"></span>`:'').join('');
+    const o=S.owner[i];let ow=el.querySelector('.owner');
+    if(o>=0){if(!ow){ow=document.createElement('span');ow.className='owner';el.appendChild(ow)}ow.style.background=`var(${COL[o]})`}else if(ow)ow.remove();
+  });
+  $('#score').innerHTML=S.teams.map((t,k)=>{const n=S.owner.filter(o=>o===k).length;
+    return `<li class="${k===S.cur?'on':''}">${team(k)}<input id="nm${k}" value="${names[k]}" aria-label="Название команды ${k+1}"><span class="small">тем: ${n}</span><b>${t.score}</b></li>`}).join('');
+  S.teams.forEach((_,k)=>{$('#nm'+k).oninput=e=>{names[k]=e.target.value;$('#turn').innerHTML=team(S.cur)+' '+names[S.cur]}});
+  $('#turn').innerHTML=team(S.cur)+' '+names[S.cur];
+  $('#roll').disabled=busy||S.rolled;$('#end').disabled=busy||!S.rolled||S.pending;
+  $('#log').innerHTML=S.log.slice(0,30).map(l=>`<li>${l}</li>`).join('');
+}
+function log(t){S.log.unshift(t)}
+function add(k,d){S.teams[k].score=Math.max(0,S.teams[k].score+d)}
+function head(i){const c=C[i];let g='var(--ink)',hc='var(--bg)',lab='';
+  if(c[1]){g=`var(${G[c[1]][1]})`;hc=DARKTXT.includes(c[1])?'#17261d':'#fff';lab=G[c[1]][0]}
+  else if(c[0]==='ch'){lab='Вопрос';g='var(--accent)';hc='var(--accent-ink)'}
+  else if(c[0]==='cc'){lab='Ситуация';g='var(--accent)';hc='var(--accent-ink)'}
+  else if(c[0]==='tx'){lab='Штраф';g='var(--accent)';hc='var(--accent-ink)'}
+  else lab='Угловая клетка';
+  return `<div class="hd" style="--g:${g};--hc:${hc}"><small>${lab}</small><h2>${c[2]}</h2></div>`}
+function info(i){const c=C[i];let h=`<p class="small" style="margin:0">${c[3]||''}</p>`+c[4];
+  if(buyable(i)){const o=S.owner[i];
+    h+=`<p class="small"><span class="price">цена ${price(i)}</span>консультация ${rent(i)}${o>=0?` · освоила: ${names[o]}`:' · свободна'}</p>`}
+  return h}
+function card(i){$('#card').innerHTML=head(i)+info(i)}
+function options(list,onPick){
+  const items=shuffle(list.map((t,k)=>({t,ok:k===0})));
+  const box=document.createElement('div');box.className='opts';
+  items.forEach(it=>{const b=document.createElement('button');b.className='opt';b.textContent=it.t;
+    b.onclick=()=>{[...box.children].forEach((x,j)=>{x.disabled=true;if(items[j].ok)x.classList.add('right');else if(x===b)x.classList.add('wrong');else x.classList.add('dim')});onPick(it.ok)};
+    box.appendChild(b)});
+  return box;
+}
+function roll(){
+  if(busy||S.rolled)return;busy=true;S.rolled=true;mark();
+  const d1=$('#d1'),d2=$('#d2');d1.classList.add('roll');d2.classList.add('roll');
+  const t=setInterval(()=>{d1.textContent=1+Math.floor(Math.random()*6);d2.textContent=1+Math.floor(Math.random()*6)},80);
+  setTimeout(()=>{clearInterval(t);d1.classList.remove('roll');d2.classList.remove('roll');
+    const a=1+Math.floor(Math.random()*6),b=1+Math.floor(Math.random()*6);d1.textContent=a;d2.textContent=b;
+    log(`${names[S.cur]} бросает ${a}+${b}`);step(a+b)},650);
+}
+function step(n){
+  const T=S.teams[S.cur];
+  if(n===0){busy=false;land(T.pos);return}
+  T.pos=(T.pos+1)%40;
+  if(T.pos===0){add(S.cur,2);log(`${names[S.cur]} проходит старт (+2)`)}
+  selected=T.pos;mark();setTimeout(()=>step(n-1),230);
+}
+function land(i){
+  const c=C[i],k=S.cur;selected=i;
+  if(c[0]==='tx'){add(k,-2);log(`${names[k]}: «${c[2]}» (−2)`);card(i)}
+  else if(i===20){add(k,1);log(`${names[k]}: просвещение (+1)`);card(i)}
+  else if(i===30){log(`${names[k]} совершает правонарушение и попадает в суд`);card(i);S.teams[k].pos=10;selected=10}
+  else if(buyable(i)){
+    const o=S.owner[i];
+    if(o>=0&&o!==k){const r=Math.min(rent(i),S.teams[k].score);add(k,-r);add(o,r);log(`${names[k]} платит ${names[o]} за консультацию по теме «${c[2]}» (−${r})`);card(i)}
+    else if(o===k){card(i)}
+    else{quiz(i);return}
+  }
+  else if(c[0]==='ch'){draw('ch');return}
+  else if(c[0]==='cc'){draw('cc');return}
+  else card(i);
+  mark();
+}
+function quiz(i){
+  const c=C[i],k=S.cur,p=price(i);
+  const intro=`<p><span class="price">цена ${p}</span>Ответьте верно, чтобы освоить тему. У вас ${S.teams[k].score} ${pl(S.teams[k].score)}.</p>`;
+  if(S.teams[k].score<p){log(`${names[k]}: не хватает баллов на «${c[2]}»`);
+    $('#card').innerHTML=head(i)+`<p>Не хватает баллов (нужно ${p}, у вас ${S.teams[k].score}).</p>`+info(i);mark();return}
+  S.pending=true;
+  $('#card').innerHTML=head(i)+intro+`<p><b>${c[6]}</b></p><div id="qbox"></div><div class="act" id="qact"><button class="btn alt" id="nobuy">Не покупать</button></div>`;
+  $('#qbox').appendChild(options(c[7],ok=>{
+    $('#qact').remove();
+    if(ok){add(k,-p);S.owner[i]=k;log(`${names[k]} отвечает верно и осваивает «${c[2]}» (−${p})`)}
+    else log(`${names[k]} отвечает неверно: «${c[2]}» остаётся свободной`);
+    S.pending=false;
+    $('#qbox').insertAdjacentHTML('afterend',`<div class="verdict ${ok?'':'bad'}">${ok?`Верно! Тема ваша, списано баллов: ${p}.`:'Неверно. Тема остаётся свободной.'}</div>`+info(i));
+    mark();}));
+  $('#nobuy').onclick=()=>{S.pending=false;log(`${names[k]} отказывается от «${c[2]}»`);$('#card').innerHTML=head(i)+info(i);mark()};
+  mark();
+}
+function draw(t){
+  const deck=t==='ch'?'dch':'dcc',src=t==='ch'?CHANCE:CHEST,k=S.cur,i=S.teams[k].pos;
+  if(!S[deck].length)S[deck]=shuffle(src.map((_,j)=>j));
+  const q=src[S[deck].shift()];
+  if(t==='cc'){
+    add(k,q[1]);log(`${names[k]}: «Кейс» (${q[1]>0?'+':''}${q[1]})`);
+    $('#card').innerHTML=head(i)+`<p>${q[0]}</p><div class="verdict ${q[1]<0?'bad':''}">${q[1]>0?'+'+q[1]+' '+pl(q[1]):q[1]<0?'−'+(-q[1])+' '+pl(q[1]):'Без изменений'}</div>`;mark();return}
+  S.pending=true;
+  $('#card').innerHTML=head(i)+`<p><b>${q[0]}</b></p><p class="small">Верный ответ: +2 балла.</p><div id="qbox"></div>`;
+  $('#qbox').appendChild(options(q[1],ok=>{
+    if(ok)add(k,2);log(`${names[k]}: «Вопрос» ${ok?'верно (+2)':'неверно (0)'}`);S.pending=false;
+    $('#qbox').insertAdjacentHTML('afterend',`<div class="verdict ${ok?'':'bad'}">${ok?'Верно: +2 балла.':'Неверно.'}</div><p>${q[2]}</p>`);mark()}));
+  mark();
+}
+function endTurn(){if(!S.rolled||S.pending||busy)return;S.cur=(S.cur+1)%S.teams.length;S.rolled=false;$('#d1').textContent='·';$('#d2').textContent='·';selected=S.teams[S.cur].pos;card(selected);mark()}
+function finish(){
+  const rows=S.teams.map((t,k)=>{const v=S.owner.reduce((a,o,i)=>a+(o===k?price(i):0),0);return{k,s:t.score,v,n:S.owner.filter(o=>o===k).length,tot:t.score+v}}).sort((a,b)=>b.tot-a.tot);
+  $('#card').innerHTML=`<div class="hd" style="--g:var(--ink);--hc:var(--bg)"><small>Итоги</small><h2>Подведение итогов</h2></div>
+  <p class="small">Итог = баллы + стоимость освоенных тем.</p>
+  <table class="rank"><tr><th>Команда</th><th>Баллы</th><th>Темы</th><th>Итог</th></tr>${rows.map(r=>`<tr><td>${team(r.k)} ${names[r.k]}</td><td>${r.s}</td><td>${r.n} (${r.v})</td><td><b>${r.tot}</b></td></tr>`).join('')}</table>
+  <p><b>Победитель: ${names[rows[0].k]}</b></p>`;
+}
+function start(){const n=+$('#nteams').value;fresh(n);busy=false;build();selected=0;card(0);mark()}
+$('#nteams').onchange=start;$('#reset').onclick=start;$('#finish').onclick=finish;
+start();
+</script>
+
+
+
+</body>
+</html>
