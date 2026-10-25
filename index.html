@@ -54,8 +54,8 @@ button{font:inherit;cursor:pointer}
 .cell.rail{background:linear-gradient(var(--cell),var(--cell))}
 .cell.ch .nm,.cell.cc .nm{color:var(--accent);font-size:1.5cqw}
 .cell.tx{background:repeating-linear-gradient(135deg,var(--cell) 0 6px,var(--board) 6px 12px)}
-.corner .nm{font-family:var(--f-disp);font-weight:400;font-size:1.65cqw;color:var(--accent)}
-.corner .body{justify-content:center;gap:4px;padding:6%}
+.corner .nm{font-family:var(--f-disp);font-weight:400;font-size:1cqw;line-height:1.15;padding-top:.6cqw;color:var(--accent);hyphens:manual}
+.corner .body{justify-content:center;gap:4px;padding:6% 2%}
 .owner{position:absolute;right:3px;bottom:3px;width:1.9cqw;height:1.9cqw;min-width:9px;min-height:9px;border-radius:50%;border:2px solid var(--ink)}
 .tks{position:absolute;left:0;right:0;bottom:2%;display:flex;gap:2px;flex-wrap:wrap;justify-content:center;pointer-events:none}
 .tk{width:2.6cqw;height:2.6cqw;min-width:12px;min-height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--ink);transition:transform .15s}
@@ -79,7 +79,7 @@ button{font:inherit;cursor:pointer}
 .btn:disabled{opacity:.35;cursor:not-allowed}
 @container (max-width:600px){
   .nm,.sl{display:none}.idx{font-size:9px;position:static;margin:auto}.body{justify-content:center}
-  .cell.ch .nm,.cell.cc .nm{display:block;font-size:0;padding:0}.cell.ch .nm::before{content:'?';font-size:16px}.cell.cc .nm::before{content:'★';font-size:14px}.corner .nm{display:block;font-size:6.5px;padding:0;overflow-wrap:anywhere}
+  .cell.ch .nm,.cell.cc .nm{display:block;font-size:0;padding:0}.cell.ch .nm::before{content:'?';font-size:16px}.cell.cc .nm::before{content:'★';font-size:14px}.corner .nm{display:block;font-size:0;padding:0}.corner .nm::before{content:attr(data-s);font-size:7px;line-height:1.1}
   .lead{display:none}.banner{font-size:4.8cqw}}
 /* панель */
 .side{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -195,7 +195,7 @@ const C=[
  'Какой компонент правосознания включает установки и мотивы, определяющие выбор правомерного поведения?',['Волевой','Интеллектуальный','Эмоциональный','Нормативный']],
 ['p','yellow','Правовой нигилизм','отрицание права','<p>Идеология, отрицающая необходимость и позитивную роль права. Формы: умышленные нарушения закона, массовое неисполнение предписаний, акты, противоречащие закону, подмена законности политической целесообразностью, нарушение конституционных прав, догматизация и примат политики над правом.</p>','',
  'Что относится к формам проявления правового нигилизма?',['Массовое несоблюдение и неисполнение правовых предписаний','Правовое просвещение молодёжи','Бесплатная юридическая помощь','Укрепление независимости судей']],
-['c','','ПРАВОНАРУШЕНИЕ!','в суд','<p>Нарушение закона отправляет в клетку 10. За правонарушения наступает юридическая ответственность, а решения можно обжаловать в суд.</p>'],
+['c','','ПРАВО­НАРУШЕНИЕ!','в суд','<p>Нарушение закона отправляет в клетку 10. За правонарушения наступает юридическая ответственность, а решения можно обжаловать в суд.</p>'],
 ['p','green','Правовая культура','понятие','<p>Элемент духовной культуры, отражающий уровень развития права и его роль в жизни; система ценностей, достигнутых человечеством в области права.</p>','',
  'Что такое правовая культура?',['Элемент духовной культуры, отражающий уровень развития права и его роль в жизни','Фактическая юридическая упорядоченность поведения','Универсальное требование соблюдать правовые нормы','Система органов, охраняющих порядок']],
 ['p','green','Элементы культуры','три элемента','<p>Законодательство (уровень законодательной техники), правоприменение (уровень практики), правосознание и правовая активность населения.</p>','',
@@ -236,6 +236,7 @@ const $=s=>document.querySelector(s);
 const COL=['--t1','--t2','--t3','--t4'], NAMES=['Команда 1','Команда 2','Команда 3','Команда 4'];
 function xy(i){ if(i<=10)return[11,11-i]; if(i<=19)return[11-(i-10),1]; if(i<=30)return[1,1+(i-20)]; return[1+(i-30),11]; }
 function side(i){ if(i<10&&i>0)return'b'; if(i>10&&i<20)return'l'; if(i>20&&i<30)return't'; if(i>30)return'r'; return'k'; }
+const SH={0:'СТАРТ',10:'СУД',20:'+1',30:'В СУД'};
 const cls={c:'corner',p:'prop',r:'rail',u:'util',ch:'ch',cc:'cc',tx:'tx'};
 const buyable=i=>['p','r','u'].includes(C[i][0]);
 const price=i=>buyable(i)?PR[C[i][1]]:0;
@@ -256,7 +257,7 @@ function build(){
     const g=c[1]?`style="--g:var(${G[c[1]][1]})"`:'';
     const nm=c[0]==='ch'?'ВОПРОС ?':c[0]==='cc'?'КЕЙС':c[2];
     const sl=buyable(i)?`цена ${price(i)}`:(c[3]&&c[0]!=='ch'&&c[0]!=='cc'?c[3]:'');
-    el.innerHTML=`<span class="idx">${i}</span><span class="band" ${g}></span><span class="body"><span class="nm">${nm}</span>${sl?`<span class="sl">${sl}</span>`:'<span></span>'}</span><span class="tks"></span>`;
+    el.innerHTML=`<span class="idx">${i}</span><span class="band" ${g}></span><span class="body"><span class="nm" data-s="${SH[i]||''}">${nm}</span>${sl?`<span class="sl">${sl}</span>`:'<span></span>'}</span><span class="tks"></span>`;
     el.onclick=()=>{selected=i;card(i);mark()};
     b.appendChild(el);
   });
