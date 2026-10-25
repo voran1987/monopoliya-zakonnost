@@ -118,8 +118,6 @@ button{font:inherit;cursor:pointer}
 .rank{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .rank td,.rank th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left}
 .small{font-size:.85rem;color:var(--muted)}
-.clock{font-family:var(--f-disp);font-size:2.4rem;line-height:1.1;font-variant-numeric:tabular-nums;margin-bottom:8px}
-.clock.low{color:var(--bad)}
 @media(prefers-reduced-motion:reduce){.die.roll{animation:none}.tk{transition:none}}
 </style>
 </head>
@@ -128,11 +126,6 @@ button{font:inherit;cursor:pointer}
   <div id="board" class="board" aria-label="Игровое поле"></div>
   <aside class="side">
     <section class="panel card" id="card" aria-live="polite"></section>
-    <section class="panel"><h3>ВРЕМЯ ИГРЫ</h3><div class="clock" id="clock">90:00</div>
-      <div class="cfg"><label for="dur">Длительность:</label>
-        <select id="dur"><option value="45">45 мин</option><option value="60">60 мин</option><option value="90" selected>90 мин</option></select>
-        <button class="btn alt" id="pause" style="padding:4px 10px;font-size:.85rem">Пауза</button></div>
-      <p class="small" id="clockNote" style="margin:8px 0 0">Таймер запускается с первого броска. Когда время выйдет, команда доигрывает ход и подводятся итоги.</p></section>
     <section class="panel"><h3>БАЛЛЫ</h3><ul class="score" id="score"></ul>
       <div class="cfg" style="margin-top:10px"><label for="nteams">Команд:</label>
         <select id="nteams"><option>2</option><option selected>3</option><option>4</option></select>
@@ -251,8 +244,7 @@ let S, names=[...NAMES], selected=0, busy=false;
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function fresh(n){
   S={teams:Array.from({length:n},()=>({pos:0,score:12})),cur:0,rolled:false,pending:false,owner:Array(40).fill(-1),
-     dch:shuffle(CHANCE.map((_,k)=>k)),dcc:shuffle(CHEST.map((_,k)=>k)),log:[],
-     total:(+$('#dur').value||90)*60,left:(+$('#dur').value||90)*60,running:false,paused:false,timeUp:false,over:false};
+     dch:shuffle(CHANCE.map((_,k)=>k)),dcc:shuffle(CHEST.map((_,k)=>k)),log:[]};
 }
 function build(){
   const b=$('#board');b.innerHTML='';
@@ -290,8 +282,7 @@ function mark(){
     return `<li class="${k===S.cur?'on':''}">${team(k)}<input id="nm${k}" value="${names[k]}" aria-label="Название команды ${k+1}"><span class="small">тем: ${n}</span><b>${t.score}</b></li>`}).join('');
   S.teams.forEach((_,k)=>{$('#nm'+k).oninput=e=>{names[k]=e.target.value;$('#turn').innerHTML=team(S.cur)+' '+names[S.cur]}});
   $('#turn').innerHTML=team(S.cur)+' '+names[S.cur];
-  $('#roll').disabled=busy||S.rolled||S.paused||S.over;$('#end').disabled=busy||!S.rolled||S.pending||S.paused;
-  $('#dur').disabled=S.running||S.over;$('#pause').disabled=!S.running||S.over;$('#pause').textContent=S.paused?'Продолжить':'Пауза';drawClock();
+  $('#roll').disabled=busy||S.rolled;$('#end').disabled=busy||!S.rolled||S.pending;
   $('#log').innerHTML=S.log.slice(0,30).map(l=>`<li>${l}</li>`).join('');
 }
 function log(t){S.log.unshift(t)}
@@ -317,7 +308,7 @@ function options(list,onPick){
   return box;
 }
 function roll(){
-  if(busy||S.rolled||S.paused||S.over)return;if(!S.running)S.running=true;busy=true;S.rolled=true;mark();
+  if(busy||S.rolled)return;busy=true;S.rolled=true;mark();
   const d1=$('#d1'),d2=$('#d2');d1.classList.add('roll');d2.classList.add('roll');
   const t=setInterval(()=>{d1.textContent=1+Math.floor(Math.random()*6);d2.textContent=1+Math.floor(Math.random()*6)},80);
   setTimeout(()=>{clearInterval(t);d1.classList.remove('roll');d2.classList.remove('roll');
@@ -391,19 +382,7 @@ function draw(t){
     $('#qbox').insertAdjacentHTML('afterend',`<div class="verdict ${ok?'':'bad'}">${ok?'Верно: +2 балла.':'Неверно.'}</div><p>${q[2]}</p>`);mark()}));
   mark();
 }
-function endTurn(){if(!S.rolled||S.pending||busy||S.paused)return;if(S.timeUp){endGame();return}S.cur=(S.cur+1)%S.teams.length;S.rolled=false;$('#d1').textContent='·';$('#d2').textContent='·';selected=S.teams[S.cur].pos;card(selected);mark()}
-function fmt(t){t=Math.max(0,t);return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
-function drawClock(){const c=$('#clock');if(!c||!S)return;c.textContent=fmt(S.left);c.classList.toggle('low',S.left<=300&&S.running)}
-function endGame(){S.over=true;S.running=false;log('Время игры вышло. Подведены итоги.');finish();mark()}
-setInterval(()=>{
-  if(!S||!S.running||S.paused||S.over)return;
-  S.left--;
-  if(S.left===300)log('Осталось 5 минут.');
-  if(S.left<=0){S.left=0;S.timeUp=true;
-    if(!S.rolled&&!busy&&!S.pending)endGame();
-    else{log('Время вышло: команда доигрывает ход.');$('#clockNote').textContent='Время вышло. После хода текущей команды подводятся итоги.'}}
-  drawClock();
-},1000);
+function endTurn(){if(!S.rolled||S.pending||busy)return;S.cur=(S.cur+1)%S.teams.length;S.rolled=false;$('#d1').textContent='·';$('#d2').textContent='·';selected=S.teams[S.cur].pos;card(selected);mark()}
 function finish(){
   const rows=S.teams.map((t,k)=>{const v=S.owner.reduce((a,o,i)=>a+(o===k?price(i):0),0);return{k,s:t.score,v,n:S.owner.filter(o=>o===k).length,tot:t.score+v}}).sort((a,b)=>b.tot-a.tot);
   $('#card').innerHTML=`<div class="hd" style="--g:var(--ink);--hc:var(--bg)"><small>Итоги</small><h2>Подведение итогов</h2></div>
@@ -412,7 +391,7 @@ function finish(){
   <p><b>Победитель: ${names[rows[0].k]}</b></p>`;
 }
 function start(){const n=+$('#nteams').value;fresh(n);busy=false;build();selected=0;card(0);mark()}
-$('#nteams').onchange=start;$('#reset').onclick=start;$('#dur').onchange=()=>{if(!S.running){S.total=S.left=+$('#dur').value*60;drawClock()}};$('#pause').onclick=()=>{if(S.running&&!S.over){S.paused=!S.paused;log(S.paused?'Игра на паузе':'Игра продолжается');mark()}};$('#finish').onclick=finish;
+$('#nteams').onchange=start;$('#reset').onclick=start;$('#finish').onclick=finish;
 start();
 </script>
 
