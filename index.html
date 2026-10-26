@@ -325,7 +325,7 @@ function step(n){
 }
 function land(i){
   const c=C[i],k=S.cur;selected=i;
-  if(c[0]==='tx'){add(k,-2);log(`${names[k]}: «${c[2]}» (−2)`);card(i)}
+  if(c[0]==='tx'){log(`${names[k]}: «${c[2]}» (−2)`);card(i);pay(k,2,-1,`«${c[2]}»`);return}
   else if(i===20){add(k,1);log(`${names[k]}: просвещение (+1)`);card(i)}
   else if(i===30){log(`${names[k]} совершает правонарушение и попадает в суд`);card(i);S.teams[k].pos=10;selected=10}
   else if(buyable(i)){
@@ -340,17 +340,40 @@ function land(i){
   mark();
 }
 function rentQuiz(i,o){
-  const c=C[i],k=S.cur,r=Math.min(rent(i),S.teams[k].score);
-  if(r===0){log(`${names[k]}: тема «${c[2]}» освоена командой ${names[o]}, платить нечем`);card(i);mark();return}
+  const c=C[i],k=S.cur,r=rent(i);
   S.pending=true;
   $('#card').innerHTML=head(i)+`<p>Тема уже освоена командой ${names[o]}. За консультацию нужно заплатить ${r} ${pl(r)}, но верный ответ освобождает от платы.</p><p><b>${c[6]}</b></p><div id="qbox"></div>`;
   $('#qbox').appendChild(options(c[7],ok=>{
-    if(ok)log(`${names[k]} верно отвечает по теме «${c[2]}» и не платит`);
-    else{add(k,-r);add(o,r);log(`${names[k]} отвечает неверно и платит ${names[o]} ${r} ${pl(r)} за консультацию по теме «${c[2]}»`)}
     S.pending=false;
-    $('#qbox').insertAdjacentHTML('afterend',`<div class="verdict ${ok?'':'bad'}">${ok?'Верно! Платить не нужно.':`Неверно. Списано: ${r} ${pl(r)}.`}</div>`+info(i));
-    mark()}));
+    $('#qbox').insertAdjacentHTML('afterend',`<div class="verdict ${ok?'':'bad'}">${ok?'Верно! Платить не нужно.':`Неверно. К оплате: ${r} ${pl(r)}.`}</div>`+info(i));
+    if(ok){log(`${names[k]} верно отвечает по теме «${c[2]}» и не платит`);mark()}
+    else{log(`${names[k]} отвечает неверно по теме «${c[2]}»: консультация ${r} ${pl(r)}`);pay(k,r,o,`консультация по теме «${c[2]}»`)}}));
   mark();
+}
+const sv=i=>Math.max(1,Math.floor(price(i)/2));
+function pay(k,amt,to,why,done){
+  const T=S.teams[k],fin=done||mark;
+  const settle=()=>{const p=Math.min(amt,T.score);T.score-=p;if(to>=0)S.teams[to].score+=p;return p};
+  const mine=()=>S.owner.map((o,i)=>o===k?i:-1).filter(i=>i>=0);
+  if(T.score>=amt){settle();fin();return}
+  const assets=mine().reduce((a,i)=>a+sv(i),0);
+  if(T.score+assets<amt){
+    mine().forEach(i=>{S.owner[i]=-1;T.score+=sv(i)});
+    const p=settle();
+    log(`${names[k]} продаёт банку все темы и платит ${p} ${pl(p)} (${why})`);
+    $('#card').insertAdjacentHTML('beforeend',`<div class="verdict bad">Баллов не хватило даже после продажи всех тем. Команда продала их банку и заплатила ${p} ${pl(p)}.</div>`);
+    fin();return}
+  S.pending=true;
+  const box=document.createElement('div');$('#card').appendChild(box);
+  const show=()=>{
+    if(T.score>=amt){const p=settle();S.pending=false;log(`${names[k]} расплачивается: ${p} ${pl(p)} (${why})`);
+      box.innerHTML=`<div class="verdict">Долг погашен: списано ${p} ${pl(p)}.</div>`;fin();return}
+    box.innerHTML=`<div class="verdict bad">Не хватает баллов: нужно ${amt}, у вас ${T.score}. Продайте банку темы по половине цены.</div><div class="opts">`+
+      mine().map(i=>`<button class="opt" data-i="${i}">${C[i][2]}: продать за ${sv(i)} ${pl(sv(i))}</button>`).join('')+'</div>';
+    box.querySelectorAll('button').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;S.owner[i]=-1;T.score+=sv(i);log(`${names[k]} продаёт банку тему «${C[i][2]}» (+${sv(i)})`);show()});
+    mark();
+  };
+  show();
 }
 function quiz(i){
   const c=C[i],k=S.cur,p=price(i);
@@ -374,8 +397,8 @@ function draw(t){
   if(!S[deck].length)S[deck]=shuffle(src.map((_,j)=>j));
   const q=src[S[deck].shift()];
   if(t==='cc'){
-    add(k,q[1]);log(`${names[k]}: «Кейс» (${q[1]>0?'+':''}${q[1]})`);
-    $('#card').innerHTML=head(i)+`<p>${q[0]}</p><div class="verdict ${q[1]<0?'bad':''}">${q[1]>0?'+'+q[1]+' '+pl(q[1]):q[1]<0?'−'+(-q[1])+' '+pl(q[1]):'Без изменений'}</div>`;mark();return}
+    log(`${names[k]}: «Кейс» (${q[1]>0?'+':''}${q[1]})`);if(q[1]>=0)add(k,q[1]);
+    $('#card').innerHTML=head(i)+`<p>${q[0]}</p><div class="verdict ${q[1]<0?'bad':''}">${q[1]>0?'+'+q[1]+' '+pl(q[1]):q[1]<0?'−'+(-q[1])+' '+pl(q[1]):'Без изменений'}</div>`;if(q[1]<0)pay(k,-q[1],-1,'кейс');else mark();return}
   S.pending=true;
   $('#card').innerHTML=head(i)+`<p><b>${q[0]}</b></p><p class="small">Верный ответ: +2 балла.</p><div id="qbox"></div>`;
   $('#qbox').appendChild(options(q[1],ok=>{
