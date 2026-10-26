@@ -118,6 +118,17 @@ button{font:inherit;cursor:pointer}
 .rank{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .rank td,.rank th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left}
 .small{font-size:.85rem;color:var(--muted)}
+.qover{grid-column:2/11;grid-row:2/11;z-index:5;background:var(--panel);border:3px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow:auto;text-align:left}
+.qh{background:var(--g,var(--ink));color:var(--hc,var(--bg));padding:1.4cqw 2.4cqw;border-bottom:3px solid var(--line);flex:none}
+.qh small{display:block;font-family:var(--f-nar);font-size:max(11px,1.2cqw);letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.qh h2{font-size:max(17px,2.4cqw);line-height:1.15}
+.qb{padding:max(10px,1.8cqw) max(12px,2.4cqw);font-size:max(14px,1.7cqw);line-height:1.4}
+.qb p{margin:.4em 0}.qb .small{font-size:max(12px,1.35cqw)}
+.qover .opts{gap:max(6px,.9cqw)}
+.qover .opt{font-size:max(14px,1.75cqw);padding:max(8px,1cqw) max(10px,1.5cqw)}
+.qb .verdict{font-size:max(14px,1.75cqw)}
+.qb .act{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+@container (max-width:600px){.qover{grid-column:1/-1;grid-row:1/-1}}
 .tl{display:flex;flex-direction:column;gap:6px}
 .tl label{display:flex;gap:8px;align-items:flex-start;border:2px solid var(--line);padding:6px 8px;background:var(--cell);font-size:.9rem;cursor:pointer}
 .tl label.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--cell))}
@@ -258,7 +269,20 @@ const rent=i=>base(i)*mult(i);
 function rule(i){const g=C[i][1];
   if(g==='rail')return 'Плата растёт с числом освоенных тем блока: одна тема ×1, две ×2, три ×3, все четыре ×4.';
   return 'Если команда освоила все темы блока, плата ×2.'}
-let S, names=[...NAMES], selected=0, busy=false;
+let S, names=[...NAMES], selected=0, busy=false, QO=false;
+const Q=()=>QO?$('#qover .qb'):$('#card');
+function openQ(i,label){
+  const c=C[i],g=c[1]?`var(${G[c[1]][1]})`:'var(--accent)',hc=c[1]?(DARKTXT.includes(c[1])?'#17261d':'#fff'):'var(--accent-ink)';
+  QO=true;const o=$('#qover');o.hidden=false;
+  o.innerHTML=`<div class="qh" style="--g:${g};--hc:${hc}"><small>${label||(c[1]?G[c[1]][0]:'Вопрос')}</small><h2>${c[2]}</h2></div><div class="qb"></div>`;
+  $('#card').innerHTML=head(i)+'<p class="small">Вопрос открыт на табло.</p>';
+}
+function closeQ(){QO=false;const o=$('#qover');if(o){o.hidden=true;o.innerHTML=''}}
+function cont(i){
+  Q().insertAdjacentHTML('beforeend','<div class="act"><button class="btn hot" id="qcont">Продолжить</button></div>');
+  $('#qcont').disabled=S.pending;
+  $('#qcont').onclick=()=>{if(S.pending)return;closeQ();card(i);mark()};
+}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function fresh(n){
   S={teams:Array.from({length:n},()=>({pos:0,score:15})),cur:0,rolled:false,pending:false,owner:Array(40).fill(-1),
@@ -285,6 +309,7 @@ function build(){
   <div class="turn" id="turn"></div>
   <div class="btns"><button class="btn hot" id="roll">Бросить кубики</button><button class="btn alt" id="end">Передать ход</button><button class="btn alt" id="trade">Обмен</button></div>`;
   b.appendChild(ce);
+  const qo=document.createElement('div');qo.className='qover';qo.id='qover';qo.hidden=true;b.appendChild(qo);QO=false;
   $('#roll').onclick=roll;$('#end').onclick=endTurn;$('#trade').onclick=tradeOpen;
   $('#legend').innerHTML=Object.entries(G).map(([k,v])=>`<span><i style="background:var(${v[1]})"></i>${v[0]}</span>`).join('');
 }
@@ -300,7 +325,7 @@ function mark(){
     return `<li class="${k===S.cur?'on':''}">${team(k)}<input id="nm${k}" value="${names[k]}" aria-label="Название команды ${k+1}"><span class="small">тем: ${n}</span><b>${t.score}</b></li>`}).join('');
   S.teams.forEach((_,k)=>{$('#nm'+k).oninput=e=>{names[k]=e.target.value;$('#turn').innerHTML=team(S.cur)+' '+names[S.cur]}});
   $('#turn').innerHTML=team(S.cur)+' '+names[S.cur];
-  $('#roll').disabled=busy||S.rolled||S.pending;$('#end').disabled=busy||!S.rolled||S.pending;$('#trade').disabled=busy||S.pending;
+  $('#roll').disabled=busy||S.rolled||S.pending;$('#end').disabled=busy||!S.rolled||S.pending;$('#trade').disabled=busy||S.pending;{const qc=$('#qcont');if(qc)qc.disabled=S.pending}
   $('#log').innerHTML=S.log.slice(0,30).map(l=>`<li>${l}</li>`).join('');
 }
 function log(t){S.log.unshift(t)}
@@ -359,12 +384,13 @@ function land(i){
 function rentQuiz(i,o){
   const c=C[i],k=S.cur,r=rent(i);
   S.pending=true;
-  $('#card').innerHTML=head(i)+`<p>Тема уже освоена командой ${names[o]}. За консультацию нужно заплатить ${r} ${pl(r)}, но верный ответ освобождает от платы.</p><p><b>${c[6]}</b></p><div id="qbox"></div>`;
+  openQ(i);
+  Q().innerHTML=`<p>Тема уже освоена командой ${names[o]}. За консультацию нужно заплатить ${r} ${pl(r)}, но верный ответ освобождает от платы.</p><p><b>${c[6]}</b></p><div id="qbox"></div>`;
   $('#qbox').appendChild(options(c[7],ok=>{
     S.pending=false;
     $('#qbox').insertAdjacentHTML('afterend',`<div class="verdict ${ok?'':'bad'}">${ok?'Верно! Платить не нужно.':`Неверно. К оплате: ${r} ${pl(r)}.`}</div>`+info(i));
-    if(ok){log(`${names[k]} верно отвечает по теме «${c[2]}» и не платит`);mark()}
-    else{log(`${names[k]} отвечает неверно по теме «${c[2]}»: консультация ${r} ${pl(r)}`);pay(k,r,o,`консультация по теме «${c[2]}»`)}}));
+    if(ok){log(`${names[k]} верно отвечает по теме «${c[2]}» и не платит`);cont(i);mark()}
+    else{log(`${names[k]} отвечает неверно по теме «${c[2]}»: консультация ${r} ${pl(r)}`);pay(k,r,o,`консультация по теме «${c[2]}»`);cont(i);mark()}}));
   mark();
 }
 const sv=i=>Math.max(1,Math.floor(price(i)/2));
@@ -378,10 +404,10 @@ function pay(k,amt,to,why,done){
     mine().forEach(i=>{S.owner[i]=-1;T.score+=sv(i)});
     const p=settle();
     log(`${names[k]} продаёт банку все темы и платит ${p} ${pl(p)} (${why})`);
-    $('#card').insertAdjacentHTML('beforeend',`<div class="verdict bad">Баллов не хватило даже после продажи всех тем. Команда продала их банку и заплатила ${p} ${pl(p)}.</div>`);
+    Q().insertAdjacentHTML('beforeend',`<div class="verdict bad">Баллов не хватило даже после продажи всех тем. Команда продала их банку и заплатила ${p} ${pl(p)}.</div>`);
     fin();return}
   S.pending=true;
-  const box=document.createElement('div');$('#card').appendChild(box);
+  const box=document.createElement('div');Q().appendChild(box);
   const show=()=>{
     if(T.score>=amt){const p=settle();S.pending=false;log(`${names[k]} расплачивается: ${p} ${pl(p)} (${why})`);
       box.innerHTML=`<div class="verdict">Долг погашен: списано ${p} ${pl(p)}.</div>`;fin();return}
@@ -398,15 +424,16 @@ function quiz(i){
   if(S.teams[k].score<p){log(`${names[k]}: не хватает баллов на «${c[2]}»`);
     $('#card').innerHTML=head(i)+`<p>Не хватает баллов (нужно ${p}, у вас ${S.teams[k].score}).</p>`+info(i);mark();return}
   S.pending=true;
-  $('#card').innerHTML=head(i)+intro+`<p><b>${c[6]}</b></p><div id="qbox"></div><div class="act" id="qact"><button class="btn alt" id="nobuy">Не покупать</button></div>`;
+  openQ(i);
+  Q().innerHTML=intro+`<p><b>${c[6]}</b></p><div id="qbox"></div><div class="act" id="qact"><button class="btn alt" id="nobuy">Не покупать</button></div>`;
   $('#qbox').appendChild(options(c[7],ok=>{
     $('#qact').remove();
     if(ok){add(k,-p);S.owner[i]=k;log(`${names[k]} отвечает верно и осваивает «${c[2]}» (−${p})`)}
     else log(`${names[k]} отвечает неверно: «${c[2]}» остаётся свободной`);
     S.pending=false;
     $('#qbox').insertAdjacentHTML('afterend',`<div class="verdict ${ok?'':'bad'}">${ok?`Верно! Тема ваша, списано баллов: ${p}.`:'Неверно. Тема остаётся свободной.'}</div>`+info(i));
-    mark();}));
-  $('#nobuy').onclick=()=>{S.pending=false;log(`${names[k]} отказывается от «${c[2]}»`);$('#card').innerHTML=head(i)+info(i);mark()};
+    cont(i);mark();}));
+  $('#nobuy').onclick=()=>{S.pending=false;log(`${names[k]} отказывается от «${c[2]}»`);closeQ();card(i);mark()};
   mark();
 }
 function draw(t){
@@ -417,10 +444,11 @@ function draw(t){
     log(`${names[k]}: «Кейс» (${q[1]>0?'+':''}${q[1]})`);if(q[1]>=0)add(k,q[1]);
     $('#card').innerHTML=head(i)+`<p>${q[0]}</p><div class="verdict ${q[1]<0?'bad':''}">${q[1]>0?'+'+q[1]+' '+pl(q[1]):q[1]<0?'−'+(-q[1])+' '+pl(q[1]):'Без изменений'}</div>`;if(q[1]<0)pay(k,-q[1],-1,'кейс');else mark();return}
   S.pending=true;
-  $('#card').innerHTML=head(i)+`<p><b>${q[0]}</b></p><p class="small">Верный ответ: +2 балла.</p><div id="qbox"></div>`;
+  openQ(i,'Вопрос');
+  Q().innerHTML=`<p><b>${q[0]}</b></p><p class="small">Верный ответ: +2 балла.</p><div id="qbox"></div>`;
   $('#qbox').appendChild(options(q[1],ok=>{
     if(ok)add(k,2);log(`${names[k]}: «Вопрос» ${ok?'верно (+2)':'неверно (0)'}`);S.pending=false;
-    $('#qbox').insertAdjacentHTML('afterend',`<div class="verdict ${ok?'':'bad'}">${ok?'Верно: +2 балла.':'Неверно.'}</div><p>${q[2]}</p>`);mark()}));
+    $('#qbox').insertAdjacentHTML('afterend',`<div class="verdict ${ok?'':'bad'}">${ok?'Верно: +2 балла.':'Неверно.'}</div><p>${q[2]}</p>`);cont(i);mark()}));
   mark();
 }
 function endTurn(){if(!S.rolled||S.pending||busy)return;S.cur=(S.cur+1)%S.teams.length;S.rolled=false;$('#d1').textContent='·';$('#d2').textContent='·';selected=S.teams[S.cur].pos;card(selected);mark()}
