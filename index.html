@@ -240,7 +240,17 @@ const SH={0:'СТАРТ',10:'СУД',20:'+1',30:'В СУД'};
 const cls={c:'corner',p:'prop',r:'rail',u:'util',ch:'ch',cc:'cc',tx:'tx'};
 const buyable=i=>['p','r','u'].includes(C[i][0]);
 const price=i=>buyable(i)?PR[C[i][1]]:0;
-const rent=i=>Math.ceil(price(i)/2);
+const base=i=>Math.ceil(price(i)/2);
+function mult(i){
+  const o=S&&S.owner?S.owner[i]:-1;if(o<0)return 1;
+  const g=C[i][1],cells=C.map((c,x)=>x).filter(x=>C[x][1]===g&&buyable(x));
+  const n=cells.filter(x=>S.owner[x]===o).length;
+  return g==='rail'?n:(n===cells.length?2:1);
+}
+const rent=i=>base(i)*mult(i);
+function rule(i){const g=C[i][1];
+  if(g==='rail')return 'Плата растёт с числом освоенных тем блока: одна тема ×1, две ×2, три ×3, все четыре ×4.';
+  return 'Если команда освоила все темы блока, плата ×2.'}
 let S, names=[...NAMES], selected=0, busy=false;
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function fresh(n){
@@ -297,7 +307,7 @@ function head(i){const c=C[i];let g='var(--ink)',hc='var(--bg)',lab='';
   return `<div class="hd" style="--g:${g};--hc:${hc}"><small>${lab}</small><h2>${c[2]}</h2></div>`}
 function info(i){const c=C[i];let h=`<p class="small" style="margin:0">${c[3]||''}</p>`+c[4];
   if(buyable(i)){const o=S.owner[i];
-    h+=`<p class="small"><span class="price">цена ${price(i)}</span>консультация ${rent(i)}${o>=0?` · освоила: ${names[o]}`:' · свободна'}</p>`}
+    h+=`<p class="small"><span class="price">цена ${price(i)}</span>консультация ${rent(i)}${mult(i)>1?` (×${mult(i)})`:''}${o>=0?` · освоила: ${names[o]}`:' · свободна'}</p><p class="small">${rule(i)}</p>`}
   return h}
 function card(i){$('#card').innerHTML=head(i)+info(i)}
 function options(list,onPick){
